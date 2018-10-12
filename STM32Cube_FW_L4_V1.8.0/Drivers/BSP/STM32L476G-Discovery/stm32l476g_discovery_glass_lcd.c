@@ -4,7 +4,8 @@
   * @author  MCD Application Team
   * @version V2.0.0
   * @date    07-April-2017
-  * @brief   This file provides a set of functions needed to manage the 
+  * @brief   This file provides a se
+to manage the 
   *          LCD Glass driver for the STM32L476G-Discovery board.
   ******************************************************************************
   * @attention

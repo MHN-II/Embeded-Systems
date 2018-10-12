@@ -719,12 +719,12 @@ Command Line: --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=interwork -
 ARM Macro Assembler    Page 12 
 
 
-TE\_stm32L476DISCO -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\4.2.0\CMSIS\Include -IC:\Kei
-l_v5\ARM\PACK\Keil\MDK-Middleware\7.4.0\Board -IC:\Keil_v5\ARM\PACK\Keil\STM32L
-4xx_DFP\1.4.0\Device\Include --predefine="__EVAL SETA 1" --predefine="__MICROLI
-B SETA 1" --predefine="__UVISION_VERSION SETA 523" --predefine="_RTE_ SETA 1" -
--predefine="STM32L476xx SETA 1" --list=.\listings\startup_stm32l476xx.lst RTE\D
-evice\STM32L476VGTx\startup_stm32l476xx.s
+TE\_stm32L476DISCO -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include -IC
+:\Keil_v5\ARM\PACK\Keil\MDK-Middleware\7.4.0\Board -IC:\Keil_v5\ARM\PACK\Keil\S
+TM32L4xx_DFP\1.4.0\Device\Include --predefine="__EVAL SETA 1" --predefine="__MI
+CROLIB SETA 1" --predefine="__UVISION_VERSION SETA 523" --predefine="_RTE_ SETA
+ 1" --predefine="STM32L476xx SETA 1" --list=.\listings\startup_stm32l476xx.lst 
+RTE\Device\STM32L476VGTx\startup_stm32l476xx.s
 
 
 

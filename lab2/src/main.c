@@ -48,8 +48,15 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+void TIM3_Config(void);
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+
+
+
+uint16_t Tim3_PrescalerValue;
+uint32_t Tim2_PrescalerValue;
+TIM_HandleTypeDef    Tim3_Handle;
 
 char lcd_buffer[6];    // LCD display buffer
 
@@ -59,6 +66,12 @@ __IO HAL_StatusTypeDef Hal_status;  //HAL_ERROR, HAL_TIMEOUT, HAL_OK, of HAL_BUS
 uint16_t EE_status=0;
 uint16_t VirtAddVarTab[NB_OF_VAR] = {0x5555, 0x6666, 0x7777}; // the emulated EEPROM can save 3 varibles, at these three addresses.
 uint16_t EEREAD;  //to practice reading the BESTRESULT save in the EE, for EE read/write, require uint16_t type
+
+uint16_t TopScore;
+char TopScorech[6];
+uint32_t Random32;
+
+
 
 
 
@@ -73,6 +86,7 @@ RNG_HandleTypeDef Rng_Handle;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Error_Handler(void);
+void TIM3_IRQHandler(void);
 
 
 
@@ -106,13 +120,21 @@ int main(void)
 
 	BSP_LED_Init(LED4);
 	BSP_LED_Init(LED5);
-	BSP_LED_Off(LED4);
+
 
 	BSP_LCD_GLASS_Init();
+	BSP_JOY_Init(JOY_MODE_EXTI);
+	
+
+	TIM3_Config(); 
+	
+
+	
 	
 
 	//BSP_LCD_GLASS_ScrollSentence((uint8_t*) "  mt3ta4 lab2 starter", 1, 200);
-	BSP_LCD_GLASS_DisplayString((uint8_t*)"MT3TA4");	
+	BSP_LCD_GLASS_DisplayString((uint8_t*)"FUCKED");	
+	TIM3_IRQHandler();
 	
 
 
@@ -133,6 +155,9 @@ int main(void)
 		Error_Handler();
   }
 // then can write to or read from the emulated EEPROM
+	TopScore = 100;
+	EE_WriteVariable(VirtAddVarTab[1],TopScore);
+	
 	
 
 	
@@ -154,6 +179,7 @@ Rng_Handle.Instance=RNG;  //Everytime declare a Handle, need to assign its Insta
     Error_Handler();
   }
 //then can use RNG
+	//HAL_RNG_GenerateRandomNumber(&Rng_Handle,&Random32);
 	
 	
 
@@ -255,35 +281,86 @@ void SystemClock_Config(void)
   * @param GPIO_Pin: Specifies the pins connected EXTI line
   * @retval None
   */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)    
 {
   switch (GPIO_Pin) {
-			case GPIO_PIN_0: 		               //SELECT button					
-											
+			case GPIO_PIN_0: 		               //SELECT button	
+					BSP_LCD_GLASS_Clear();
+					BSP_LCD_GLASS_DisplayString((uint8_t*)"SELECT");		
+					
+								
 						break;	
-			case GPIO_PIN_1:     //left button						
+			case GPIO_PIN_1:     //left button	
+						BSP_LCD_GLASS_Clear();
+					  BSP_LCD_GLASS_DisplayString((uint8_t*)"LEFT");
 						
 							break;
 			case GPIO_PIN_2:    //right button						  to play again.
+					BSP_LCD_GLASS_Clear();
+					BSP_LCD_GLASS_DisplayString((uint8_t*)"RIGHT");
 					
 							break;
-			case GPIO_PIN_3:    //up button							
+			case GPIO_PIN_3:    //up button	
+					BSP_LCD_GLASS_Clear();
+					HAL_RNG_GenerateRandomNumber(&Rng_Handle,&Random32);
+					Random32 = Random32 >> 21;
+					sprintf(TopScorech,"%u",Random32);
+					BSP_LCD_GLASS_DisplayString((uint8_t*)TopScorech);				
 					
 							break;
 			
-			case GPIO_PIN_5:    //down button						
+			case GPIO_PIN_5:    //down button
+					BSP_LCD_GLASS_Clear();
+					EE_ReadVariable(VirtAddVarTab[1],&TopScore);
+					sprintf(TopScorech,"%u",TopScore);    // converts the intiger vlaue of top score to a string 
+					BSP_LCD_GLASS_DisplayString((uint8_t*)TopScorech);				
 					
 							break;
 			default://
-						//default
+						//default 
 						break;
 	  } 
 }
 
+void  TIM3_Config(void)
+{
+	  Tim3_PrescalerValue = (uint16_t) (SystemCoreClock/ 10000) - 1;
+  
+  /* Set TIM3 instance */
+  Tim3_Handle.Instance = TIM3; //TIM3 is defined in stm32f429xx.h
+ 
+  Tim3_Handle.Init.Period = 1000 - 1;
+  Tim3_Handle.Init.Prescaler = Tim3_PrescalerValue;
+  Tim3_Handle.Init.ClockDivision = 0;
+  Tim3_Handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  if(HAL_TIM_Base_Init(&Tim3_Handle) != HAL_OK) // this line need to call the callback function _MspInit() in stm32f4xx_hal_msp.c to set up peripheral clock and NVIC..
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+  
+  /*##-2- Start the TIM Base generation in interrupt mode ####################*/
+  /* Start Channel1 */
+  if(HAL_TIM_Base_Start_IT(&Tim3_Handle) != HAL_OK)   //the TIM_XXX_Start_IT function enable IT, and also enable Timer
+																											//so do not need HAL_TIM_BASE_Start() any more.
+  {
+    /* Starting Error */
+    Error_Handler();
+  }
+	
+	
+	
+}
 
+
+	
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)   //see  stm32lxx_hal_tim.c for different callback function names. 
 																															//for timer 3 , Timer 3 use update event initerrupt
 {
+				
+      //  BSP_LED_Toggle(LED4);
+				
+		
 	
 }
 
@@ -291,7 +368,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)   //see  stm32lxx_ha
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef * htim) //see  stm32fxx_hal_tim.c for different callback function names. 
 {																																//for timer4 
 	
-
+		BSP_LED_Toggle(LED5);
 		//clear the timer counter at the end of call back to avoid interrupt interval variation!  in stm32l4xx_hal_tim.c, the counter is not cleared after  OC interrupt
 		__HAL_TIM_SET_COUNTER(htim, 0x0000);   //this macro is defined in stm32l4xx_hal_tim.h
 
