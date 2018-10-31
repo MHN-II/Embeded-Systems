@@ -49,6 +49,7 @@ NOTE: students can also configure the TimeStamp pin
 
 
 /* Includes ------------------------------------------------------------------*/
+
 #include "main.h"
 
 /** @addtogroup STM32L4xx_HAL_Examples
@@ -65,7 +66,7 @@ NOTE: students can also configure the TimeStamp pin
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef  pI2c_Handle;
 
-RTC_HandleTypeDef RTCHandle;
+RTC_HandleTypeDef RTCHandle;     //creating instances to use 
 RTC_DateTypeDef RTC_DateStructure;
 RTC_TimeTypeDef RTC_TimeStructure;
 
@@ -132,6 +133,7 @@ int main(void)
 	SystemClock_Config();   
 											
 	
+	
 	HAL_InitTick(0x0000); //set the systick interrupt priority to the highest, !!!This line need to be after systemClock_config()
 
 	
@@ -139,19 +141,20 @@ int main(void)
 	
 	BSP_JOY_Init(JOY_MODE_EXTI);
 
-	BSP_LCD_GLASS_DisplayString((uint8_t*)"MT3TA4");	
+	BSP_LCD_GLASS_DisplayString((uint8_t*)"lhjk");	
 	HAL_Delay(1000);
 
 
 //configure real-time clock
 	RTC_Config();
+
 	
 	RTC_AlarmAConfig();
-	
+
 	I2C_Init(&pI2c_Handle);
 
 
-//*********************Testing I2C EEPROM------------------
+/*********************Testing I2C EEPROM------------------
 
 	//the following variables are for testging I2C_EEPROM
 	uint8_t data1 =0x67,  data2=0x68;
@@ -215,7 +218,7 @@ int main(void)
 	
 
 
-//******************************testing I2C EEPROM*****************************	
+******************************testing I2C EEPROM*****************************/
 		
 
   /* Infinite loop */
@@ -384,19 +387,16 @@ void RTC_Config(void) {
 				
 	//****2.*****  Configure the RTC Prescaler (Asynchronous and Synchronous) and RTC hour 
         
-		
-		/************students: need to complete the following lines******************************
-		//**************************************************************************************				
-				RTCHandle.Instance = ???;
-				RTCHandle.Init.HourFormat = ???;
+				RTCHandle.Instance = RTC; 
+				RTCHandle.Init.HourFormat = RTC_HOURFORMAT_24;
 				
-				RTCHandle.Init.AsynchPrediv = ???; 
-				RTCHandle.Init.SynchPrediv = ???; 
+				RTCHandle.Init.AsynchPrediv = 127; 
+				RTCHandle.Init.SynchPrediv = 255; 
 				
 				
-				RTCHandle.Init.OutPut = ???;
-				RTCHandle.Init.OutPutPolarity = ???;
-				RTCHandle.Init.OutPutType = ???;
+				RTCHandle.Init.OutPut = RTC_OUTPUT_ALARMA;
+				RTCHandle.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+				RTCHandle.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
 				
 			
 				if(HAL_RTC_Init(&RTCHandle) != HAL_OK)
@@ -404,19 +404,17 @@ void RTC_Config(void) {
 					BSP_LCD_GLASS_Clear(); 
 					BSP_LCD_GLASS_DisplayString((uint8_t *)"RT I X"); 	
 				}
-	******************************************************************************************/
+	
 	
 	
 	
 	//****3.***** init the time and date
 				
-				
- 		/*****************Students: please complete the following lnes*****************************
-		//****************************************************************************************		
-				RTC_DateStructure.Year = ???
-				RTC_DateStructure.Month = ???
-				RTC_DateStructure.Date = ???
-				RTC_DateStructure.WeekDay = ???
+		
+				RTC_DateStructure.Year = yy;	
+				RTC_DateStructure.Month = mo;
+				RTC_DateStructure.Date = dd;
+				RTC_DateStructure.WeekDay = wd;
 				
 				if(HAL_RTC_SetDate(&RTCHandle,&RTC_DateStructure,RTC_FORMAT_BIN) != HAL_OK)   //BIN format is better 
 															//before, must set in BCD format and read in BIN format!!
@@ -426,12 +424,11 @@ void RTC_Config(void) {
 				} 
   
   
-				RTC_TimeStructure.Hours = ???;  
-				RTC_TimeStructure.Minutes = ??? 
-				RTC_TimeStructure.Seconds = ???
-				RTC_TimeStructure.TimeFormat = ???
-				RTC_TimeStructure.DayLightSaving = ???
-				RTC_TimeStructure.StoreOperation = ???
+				RTC_TimeStructure.Hours = hh;  
+				RTC_TimeStructure.Minutes = mm; 
+				RTC_TimeStructure.Seconds = ss;
+				RTC_TimeStructure.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+				RTC_TimeStructure.StoreOperation = RTC_STOREOPERATION_RESET;
 				
 				if(HAL_RTC_SetTime(&RTCHandle,&RTC_TimeStructure,RTC_FORMAT_BIN) != HAL_OK)   //BIN format is better
 																																					//before, must set in BCD format and read in BIN format!!
@@ -440,7 +437,6 @@ void RTC_Config(void) {
 					BSP_LCD_GLASS_DisplayString((uint8_t *)"T I X");
 				}	
 	  
- ********************************************************************************/
 
 
 
@@ -471,15 +467,12 @@ void RTC_Config(void) {
 void RTC_AlarmAConfig(void)
 {
 	RTC_AlarmTypeDef RTC_Alarm_Structure;
-
-	//**************students:  you need to set the followint two lines****************
-	/********************************************************************************
 	
-	RTC_Alarm_Structure.Alarm = ????
-  RTC_Alarm_Structure.AlarmMask = ?????
+	RTC_Alarm_Structure.Alarm = RTC_ALARM_A;
+  RTC_Alarm_Structure.AlarmMask = RTC_ALARMMASK_ALL;
 	
 	
-	********************************************************************************/			
+				
   
   if(HAL_RTC_SetAlarm_IT(&RTCHandle,&RTC_Alarm_Structure,RTC_FORMAT_BCD) != HAL_OK)
   {
