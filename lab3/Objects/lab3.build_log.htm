@@ -28,17 +28,27 @@ Project File Date:  10/26/2018
 *** Using Compiler 'V5.06 update 4 (build 422)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'stm32L476DISCO'
 compiling main.c...
-src\main.c(516): warning:  #940-D: missing return statement at end of non-void function "RTC_AlarmA_IT_Disable" 
+src\main.c(106): warning:  #1295-D: Deprecated declaration eeSaveTime - give arg types
+  void eeSaveTime();
+src\main.c(107): warning:  #1295-D: Deprecated declaration eeReadTime - give arg types
+  void eeReadTime();
+src\main.c(108): warning:  #1295-D: Deprecated declaration eeClear - give arg types
+  void eeClear();
+src\main.c(110): warning:  #1295-D: Deprecated declaration RTC_DateShow - give arg types
+  void RTC_DateShow();
+src\main.c(111): warning:  #1295-D: Deprecated declaration RTC_TimeShow - give arg types
+  void RTC_TimeShow();
+src\main.c(544): warning:  #940-D: missing return statement at end of non-void function "RTC_AlarmA_IT_Disable" 
   }
-src\main.c(542): warning:  #940-D: missing return statement at end of non-void function "RTC_AlarmA_IT_Enable" 
+src\main.c(570): warning:  #940-D: missing return statement at end of non-void function "RTC_AlarmA_IT_Enable" 
   }
-src\main.c(590): warning:  #177-D: function "Error_Handler"  was declared but never referenced
+src\main.c(768): warning:  #177-D: function "Error_Handler"  was declared but never referenced
   static void Error_Handler(void)
-src\main.c: 3 warnings, 0 errors
+src\main.c: 8 warnings, 0 errors
 linking...
-Program Size: Code=10500 RO-data=580 RW-data=64 ZI-data=1216  
+Program Size: Code=14064 RO-data=580 RW-data=80 ZI-data=1248  
 FromELF: creating hex file...
-".\Objects\lab3.axf" - 0 Error(s), 3 Warning(s).
+".\Objects\lab3.axf" - 0 Error(s), 8 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -50,18 +60,18 @@ Package Vendor: ARM
 
 Package Vendor: Keil
                 http://www.keil.com/pack/Keil.MDK-Middleware.7.4.0.pack
-                ::Board Support:Buttons:1.0.0 (API)
+                ::Board Support:LED:1.0.0 (API)
                 Middleware for Keil MDK-Professional and MDK-Plus
-   * Component: Buttons Version: 1.0.0
    * Component: LED Version: 1.0.0
+   * Component: Buttons Version: 1.0.0
 
 Package Vendor: Keil
                 http://www.keil.com/pack/Keil.STM32L4xx_DFP.1.4.0.pack
                 Keil::Device:Startup:1.2.0
                 STMicroelectronics STM32L4 Series Device Support, Drivers and Examples
    * Component: Startup Version: 1.2.0
-   * Component: Buttons Version: 1.0.0
    * Component: LED Version: 1.0.0
+   * Component: Buttons Version: 1.0.0
 
 <h2>Collection of Component include folders:</h2>
   .\RTE\_stm32L476DISCO
@@ -73,22 +83,22 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.1.2
 
-   * Component: ::Board Support:Buttons:1.0.0 (API)
-      Include file:  Board\Board_Buttons.h
-
    * Component: ::Board Support:LED:1.0.0 (API)
       Include file:  Board\Board_LED.h
+
+   * Component: ::Board Support:Buttons:1.0.0 (API)
+      Include file:  Board\Board_Buttons.h
 
    * Component: Keil::Device:Startup:1.2.0
       Source file:   Device\Source\system_stm32l4xx.c
       Source file:   Device\Source\ARM\startup_stm32l476xx.s
 
-   * Component: Keil.STM32L476G-EVAL::Board Support:Buttons:1.0.0
-      Source file:   Boards\ST\STM32L476G-EVAL\Common\Buttons_STM32L476G-EVAL.c
-
    * Component: Keil.STM32L476G-EVAL::Board Support:LED:1.0.0
       Source file:   Boards\ST\STM32L476G-EVAL\Common\LED_STM32L476G-EVAL.c
-Build Time Elapsed:  00:00:03
+
+   * Component: Keil.STM32L476G-EVAL::Board Support:Buttons:1.0.0
+      Source file:   Boards\ST\STM32L476G-EVAL\Common\Buttons_STM32L476G-EVAL.c
+Build Time Elapsed:  00:00:04
 </pre>
 </body>
 </html>

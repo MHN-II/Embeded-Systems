@@ -73,20 +73,27 @@ RTC_TimeTypeDef RTC_TimeStructure;
 __IO HAL_StatusTypeDef Hal_status;  //HAL_ERROR, HAL_TIMEOUT, HAL_OK, of HAL_BUSY 
 
 //memory location to write to in the device
-__IO uint16_t memLocation = 0x000A; //pick any location within range
+__IO uint16_t memLocation = 3; //pick any location within range
+	uint16_t EE_status;
 
-  
+typedef enum MainState {TIMER, PREVTIME, RECTIME, DATE, SETTINGS} MainState; 
+MainState STATE; 
+typedef enum SelState {HELD,RELEASED} SelState; 
+SelState SEL_STATE;
+
 
 char lcd_buffer[6];    // LCD display buffer
 char timestring[10]={0};  //   
 char datestring[6]={0};
 
 
+// uint16_t EE_status;
 uint8_t wd, dd, mo, yy, ss, mm, hh; // for weekday, day, month, year, second, minute, hour
 
 __IO uint32_t SEL_Pressed_StartTick;   //sysTick when the User button is pressed
 
-__IO uint8_t leftpressed, rightpressed, uppressed, downpressed, selpressed;  // button pressed 
+__IO uint8_t  rightpressed, uppressed, downpressed, selpressed;  // button pressed 
+__IO uint8_t leftpressed=0;
 __IO uint8_t  sel_held;   // if the selection button is held for a while (>800ms)
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,6 +102,13 @@ static void Error_Handler(void);
 
 void RTC_Config(void);
 void RTC_AlarmAConfig(void);
+
+void eeSaveTime();
+void eeReadTime();
+void eeClear();
+
+void RTC_DateShow();
+void RTC_TimeShow();
 
 
 /* Private functions ---------------------------------------------------------*/
@@ -125,6 +139,7 @@ int main(void)
 	sel_held=0;
 	
 
+	STATE=TIMER; 
 	HAL_Init();
 	
 	BSP_LED_Init(LED4);
@@ -141,8 +156,9 @@ int main(void)
 	
 	BSP_JOY_Init(JOY_MODE_EXTI);
 
-	BSP_LCD_GLASS_DisplayString((uint8_t*)"lhjk");	
-	HAL_Delay(1000);
+BSP_LCD_GLASS_DisplayString((uint8_t*)"LAB 3 :(");	
+	HAL_Delay(400);
+
 
 
 //configure real-time clock
@@ -160,6 +176,8 @@ int main(void)
 	uint8_t data1 =0x67,  data2=0x68;
 	uint8_t readData=0x00;
 	uint16_t EE_status;
+
+
 
 
 	EE_status=I2C_ByteWrite(&pI2c_Handle,EEPROM_ADDRESS, memLocation, data1);
@@ -219,7 +237,7 @@ int main(void)
 
 
 ******************************testing I2C EEPROM*****************************/
-		
+
 
   /* Infinite loop */
   while (1)
@@ -227,44 +245,54 @@ int main(void)
 			//the joystick is pulled down. so the default status of the joystick is 0, when pressed, get status of 1. 
 			//while the interrupt is configured at the falling edge---the moment the pressing is released, the interrupt is triggered.
 			//therefore, the variable "selpressed==1" can not be used to make choice here.
-			if (BSP_JOY_GetState() == JOY_SEL) {
-					SEL_Pressed_StartTick=HAL_GetTick(); 
-					while(BSP_JOY_GetState() == JOY_SEL) {  //while the selection button is pressed)	
-						if ((HAL_GetTick()-SEL_Pressed_StartTick)>800) {					
-						} 
+			if (BSP_JOY_GetState() == JOY_SEL){
+				SEL_Pressed_StartTick=HAL_GetTick();
+					while(BSP_JOY_GetState() == JOY_SEL) {						//while the selection button is pressed)	
+						if ((HAL_GetTick()-SEL_Pressed_StartTick)>800){	
+							SEL_STATE=HELD;
+							RTC_DateShow();
+						}				
 					}
-			}					
-//==============================================================			
-
-//==============================================================					
-			if (selpressed==1)  {
-	
-					selpressed=0;
-			} 
-//==============================================================			
-
-//==============================================================		 
-			if (leftpressed==1) {
-
-							
-					leftpressed=0;
-			}			
-//==============================================================			
-
-//==============================================================							
-			if (rightpressed==1) {
-
-			
-					rightpressed=0;
 			}
-//==============================================================			
 
-//==============================================================						
-			//switch (myState) { 
+			switch (STATE) { 
+				
+				case TIMER:
+					break; 
+				
+				case PREVTIME:
+					if(leftpressed > 1){
+						STATE=TIMER; 
+						leftpressed=0;
+					} else {
+						BSP_LCD_GLASS_Clear();
+						BSP_LCD_GLASS_DisplayString((uint8_t*)"TIMES");
+						HAL_Delay(400);
+						eeReadTime();
+					}
+						
+					break;
+				
+				case RECTIME:
+					eeSaveTime();
+					STATE=TIMER;
+					break; 
+				
+				case DATE:
+
+					
+					STATE=TIMER;
+					break; 
+				
+				case SETTINGS:
+					break; 
+				
+				default: 
+					STATE=TIMER; 
+				break; 
 				
 				
-				
-			//} //end of switch					
+			} //end of switch					
 		
 
 
@@ -550,16 +578,21 @@ HAL_StatusTypeDef  RTC_AlarmA_IT_Enable(RTC_HandleTypeDef *hrtc)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   switch (GPIO_Pin) {
-			case GPIO_PIN_0: 		               //SELECT button					
-						selpressed=1;	
+			case GPIO_PIN_0: 					//SELECT button	
+						if(SEL_STATE == HELD){
+							SEL_STATE=RELEASED;
+							STATE=TIMER;
+						} else STATE=RECTIME; 
 						break;	
-			case GPIO_PIN_1:     //left button						
-							leftpressed=1;
+			case GPIO_PIN_1:     //left button
+							STATE=PREVTIME; 
+							leftpressed+=1;
 							break;
 			case GPIO_PIN_2:    //right button						  to play again.
 							rightpressed=1;			
 							break;
-			case GPIO_PIN_3:    //up button							
+			case GPIO_PIN_3:    //up button						
+							eeClear();
 							BSP_LCD_GLASS_Clear();
 							BSP_LCD_GLASS_DisplayString((uint8_t*)"up");
 							break;
@@ -579,11 +612,156 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 
+void RTC_TimeShow(RTC_HandleTypeDef *hrtc)   //Funtion to display the RTC time on the LCD
+	{
+	HAL_RTC_GetTime(hrtc, &RTC_TimeStructure, RTC_FORMAT_BIN); //updates hh,mm,ss every sec
+	HAL_RTC_GetDate(hrtc, &RTC_DateStructure, RTC_FORMAT_BIN); 
+		
+	// sets time vatiable to variables stored in the rtc time structure 
+	ss = RTC_TimeStructure.Seconds; 
+	mm = RTC_TimeStructure.Minutes; 
+	hh = RTC_TimeStructure.Hours; 
+		
+	// converts values to a string to be displayed on the LCD 
+	sprintf(timestring,"%02u%02u%02u",hh,mm,ss);
+	BSP_LCD_GLASS_Clear();
+	BSP_LCD_GLASS_DisplayString((uint8_t*)timestring);	
+		
+	
 
+}
+	
+void eeSaveTime()
+{
+	if (memLocation >= 65532)
+	{
+		BSP_LCD_GLASS_DisplayString((uint8_t*)"FULL");
+	} 
+	else {
+		BSP_LCD_GLASS_Clear();
+		BSP_LCD_GLASS_DisplayString((uint8_t*)"SAVING");
+		
+		HAL_RTC_GetTime(&RTCHandle, &RTC_TimeStructure, RTC_FORMAT_BIN); //updates hh,mm,ss every sec
+		HAL_RTC_GetDate(&RTCHandle, &RTC_DateStructure, RTC_FORMAT_BIN); 
+			
+		// sets time vatiable to variables stored in the rtc time structure 
+		ss = RTC_TimeStructure.Seconds; 
+		mm = RTC_TimeStructure.Minutes; 
+		hh = RTC_TimeStructure.Hours; 
+		
+		
+		
+		EE_status=I2C_ByteWrite(&pI2c_Handle,EEPROM_ADDRESS, memLocation,hh);
+		
+		if(EE_status != HAL_OK)
+		{
+			I2C_Error(&pI2c_Handle);
+			BSP_LCD_GLASS_Clear();
+			BSP_LCD_GLASS_DisplayString((uint8_t*)"ERROR");
+
+		}
+		memLocation++;
+		HAL_Delay(100);
+		
+		
+		EE_status=I2C_ByteWrite(&pI2c_Handle,EEPROM_ADDRESS, memLocation,mm);
+		
+		if(EE_status != HAL_OK)
+		{
+			I2C_Error(&pI2c_Handle);
+		}
+		memLocation++;
+		HAL_Delay(100);
+		
+	EE_status=I2C_ByteWrite(&pI2c_Handle,EEPROM_ADDRESS, memLocation,ss);
+		
+		if(EE_status != HAL_OK)
+		{
+			I2C_Error(&pI2c_Handle);
+		}
+			memLocation++;
+			HAL_Delay(100);
+		
+		BSP_LCD_GLASS_Clear();
+		BSP_LCD_GLASS_DisplayString((uint8_t*)"SAVED");
+		HAL_Delay(400);
+	}
+}
+
+void eeClear()
+	{
+	for( int i=0; i<20; i++){
+		EE_status=I2C_ByteWrite(&pI2c_Handle,EEPROM_ADDRESS, memLocation,0x00);
+		
+		if(EE_status != HAL_OK)
+		{
+			I2C_Error(&pI2c_Handle);
+
+		}
+		memLocation++;
+		HAL_Delay(100);
+	}
+	memLocation=0x0A;
+}
+void eeReadTime()
+{
+	if (memLocation <= 3)
+		{
+			BSP_LCD_GLASS_Clear();
+			BSP_LCD_GLASS_DisplayString((uint8_t*)"EMPTY");
+			HAL_Delay(400);
+		} else {
+																																						//try to for loop this?
+			ss=I2C_ByteRead(&pI2c_Handle,EEPROM_ADDRESS, memLocation-1);
+			HAL_Delay(10);
+			mm=I2C_ByteRead(&pI2c_Handle,EEPROM_ADDRESS, memLocation-2);
+			HAL_Delay(10);
+			hh=I2C_ByteRead(&pI2c_Handle,EEPROM_ADDRESS, memLocation-3);
+			sprintf(timestring,"%02u%02u%02u",hh,mm,ss);
+			BSP_LCD_GLASS_Clear();
+			BSP_LCD_GLASS_DisplayString((uint8_t*)timestring);	
+			HAL_Delay(1000);
+			
+			ss=I2C_ByteRead(&pI2c_Handle,EEPROM_ADDRESS, memLocation-4);
+			HAL_Delay(10);
+			mm=I2C_ByteRead(&pI2c_Handle,EEPROM_ADDRESS, memLocation-5);
+			HAL_Delay(10);
+			hh=I2C_ByteRead(&pI2c_Handle,EEPROM_ADDRESS, memLocation-6);
+			sprintf(timestring,"%02u%02u%02u",hh,mm,ss);
+			BSP_LCD_GLASS_Clear();
+			BSP_LCD_GLASS_DisplayString((uint8_t*)timestring);	
+			HAL_Delay(1000);
+			
+		}
+		
+
+}		
+
+
+void RTC_DateShow()  //Funtion to display the RTC date on the LCD
+	{
+	HAL_RTC_GetDate(&RTCHandle, &RTC_DateStructure, RTC_FORMAT_BIN); 
+  /*
+	yy=RTC_DateStructure.Year;
+	mo=RTC_DateStructure.Month;
+	dd=RTC_DateStructure.Date;
+	*/
+	yy=18;
+	mo=05;
+	dd=30;
+		
+	sprintf(datestring,"%02u%02u%02u",yy,mo,dd);
+	BSP_LCD_GLASS_Clear();
+	BSP_LCD_GLASS_DisplayString((uint8_t*)datestring);	
+	HAL_Delay(400);
+		
+}
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-  BSP_LED_Toggle(LED5);
-	//RTC_TimeShow();
+	if(STATE == TIMER){
+		BSP_LED_Toggle(LED5);
+		RTC_TimeShow(hrtc);
+	}
 	
 }
 
