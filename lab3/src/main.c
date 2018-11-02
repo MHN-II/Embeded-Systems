@@ -80,6 +80,8 @@ typedef enum MainState {TIMER, PREVTIME, RECTIME, DATE, SETTINGS} MainState;
 MainState STATE; 
 typedef enum SelState {HELD,RELEASED} SelState; 
 SelState SEL_STATE;
+typedef enum SetVar {sss, smm, shh, syy, smo, sdd} SetVar;
+SetVar SETVAR; 
 
 
 char lcd_buffer[6];    // LCD display buffer
@@ -140,6 +142,7 @@ int main(void)
 	
 
 	STATE=TIMER; 
+	SETVAR=sss; 
 	HAL_Init();
 	
 	BSP_LED_Init(LED4);
@@ -254,23 +257,20 @@ BSP_LCD_GLASS_DisplayString((uint8_t*)"LAB 3 :(");
 						}				
 					}
 			}
+			
 
 			switch (STATE) { 
 				
 				case TIMER:
+					RTC_AlarmA_IT_Enable(&RTCHandle);
 					break; 
 				
 				case PREVTIME:
-					if(leftpressed > 1){
-						STATE=TIMER; 
-						leftpressed=0;
-					} else {
 						BSP_LCD_GLASS_Clear();
 						BSP_LCD_GLASS_DisplayString((uint8_t*)"TIMES");
 						HAL_Delay(400);
 						eeReadTime();
-					}
-						
+
 					break;
 				
 				case RECTIME:
@@ -279,12 +279,44 @@ BSP_LCD_GLASS_DisplayString((uint8_t*)"LAB 3 :(");
 					break; 
 				
 				case DATE:
-
-					
 					STATE=TIMER;
 					break; 
 				
 				case SETTINGS:
+					RTC_AlarmA_IT_Disable(&RTCHandle);
+					switch(SETVAR){
+						case sss:
+							BSP_LCD_GLASS_Clear();
+							BSP_LCD_GLASS_DisplayString((uint8_t*)"SEC");
+							break;
+						
+						case smm:
+							BSP_LCD_GLASS_Clear();
+							BSP_LCD_GLASS_DisplayString((uint8_t*)"MIN");
+							break;					
+						
+						case shh:
+							BSP_LCD_GLASS_Clear();
+							BSP_LCD_GLASS_DisplayString((uint8_t*)"HOUR");
+							break;
+						
+						case syy:
+							BSP_LCD_GLASS_Clear();
+							BSP_LCD_GLASS_DisplayString((uint8_t*)"YEAR");
+							break;
+						
+						case smo:
+							BSP_LCD_GLASS_Clear();
+							BSP_LCD_GLASS_DisplayString((uint8_t*)"MONTH");
+							break;	
+						
+						case sdd:
+							BSP_LCD_GLASS_Clear();
+							BSP_LCD_GLASS_DisplayString((uint8_t*)"DAY");
+							break;						
+						
+						
+					}
 					break; 
 				
 				default: 
@@ -585,16 +617,73 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 						} else STATE=RECTIME; 
 						break;	
 			case GPIO_PIN_1:     //left button
+							if(STATE == SETTINGS){
+								SETVAR=(SETVAR+1)%6;
+							} else if (STATE == PREVTIME) {
+								STATE=TIMER;
+							} else {
 							STATE=PREVTIME; 
-							leftpressed+=1;
+							}
 							break;
 			case GPIO_PIN_2:    //right button						  to play again.
-							rightpressed=1;			
+							if(STATE == SETTINGS) STATE=TIMER;
+							else STATE=SETTINGS;
+							//rightpressed+=1;		
 							break;
 			case GPIO_PIN_3:    //up button						
-							eeClear();
-							BSP_LCD_GLASS_Clear();
-							BSP_LCD_GLASS_DisplayString((uint8_t*)"up");
+							if(STATE == SETTINGS){
+								switch(SETVAR){
+									case sss:
+										RTC_TimeStructure.Seconds+=1;
+									  sprintf(lcd_buffer,"SEC=%02u",ss);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;
+									
+									case smm:
+										RTC_TimeStructure.Minutes+=1;
+									  sprintf(lcd_buffer,"MIN=%02u",mm);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;					
+									
+									case shh:
+										RTC_TimeStructure.Hours+=1;
+									  sprintf(lcd_buffer,"HRS=%02u",hh);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;
+									
+									case syy:
+										RTC_DateStructure.Year+=1;
+									  sprintf(lcd_buffer,"YR=%02u",yy);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;
+									
+									case smo:
+										RTC_DateStructure.Month+=1;
+									  sprintf(lcd_buffer,"MON=%02u",mo);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;	
+									
+									case sdd:
+										RTC_DateStructure.Date+=1;
+									  sprintf(lcd_buffer,"DAY=%02u",dd);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;						
+
+								}
+							}
+							
 							break;
 			
 			case GPIO_PIN_5:    //down button						
