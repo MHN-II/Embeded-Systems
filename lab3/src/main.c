@@ -112,6 +112,8 @@ void eeClear();
 void RTC_DateShow();
 void RTC_TimeShow();
 
+static void PushButton_Config(void);
+
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -149,6 +151,7 @@ int main(void)
 	BSP_LED_Init(LED5);
   
 	SystemClock_Config();   
+	PushButton_Config();
 											
 	
 	
@@ -251,7 +254,8 @@ BSP_LCD_GLASS_DisplayString((uint8_t*)"LAB 3 :(");
 			if (BSP_JOY_GetState() == JOY_SEL){
 				SEL_Pressed_StartTick=HAL_GetTick();
 					while(BSP_JOY_GetState() == JOY_SEL) {						//while the selection button is pressed)	
-						if ((HAL_GetTick()-SEL_Pressed_StartTick)>800){	
+						if ((HAL_GetTick()-SEL_Pressed_StartTick)>1000){	
+							RTC_AlarmA_IT_Disable(&RTCHandle);
 							SEL_STATE=HELD;
 							RTC_DateShow();
 						}				
@@ -284,6 +288,7 @@ BSP_LCD_GLASS_DisplayString((uint8_t*)"LAB 3 :(");
 				
 				case SETTINGS:
 					RTC_AlarmA_IT_Disable(&RTCHandle);
+				
 					switch(SETVAR){
 						case sss:
 							BSP_LCD_GLASS_Clear();
@@ -601,6 +606,25 @@ HAL_StatusTypeDef  RTC_AlarmA_IT_Enable(RTC_HandleTypeDef *hrtc)
 
 }
 
+static void PushButton_Config(void)
+{
+  GPIO_InitTypeDef   GPIO_InitStructure;
+
+  /* Enable GPIOC clock */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  /* Configure PE.15 pin as input*/
+  GPIO_InitStructure.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStructure.Pull = GPIO_PULLUP;
+  GPIO_InitStructure.Pin = GPIO_PIN_15 | GPIO_PIN_14;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStructure);
+	
+	
+  /* Enable and set EXTI lines 10 to 15 Interrupt to the lowest priority */
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 4, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+
 
 /**
   * @brief EXTI line detection callbacks
@@ -626,15 +650,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							}
 							break;
 			case GPIO_PIN_2:    //right button						  to play again.
-							if(STATE == SETTINGS) STATE=TIMER;
+							/*if(STATE == SETTINGS) STATE=TIMER;
 							else STATE=SETTINGS;
-							//rightpressed+=1;		
+							//rightpressed+=1;		*/
 							break;
 			case GPIO_PIN_3:    //up button						
 							if(STATE == SETTINGS){
 								switch(SETVAR){
 									case sss:
-										RTC_TimeStructure.Seconds+=1;
+										ss+=1;
 									  sprintf(lcd_buffer,"SEC=%02u",ss);
 										BSP_LCD_GLASS_Clear();
 										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
@@ -642,7 +666,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 										break;
 									
 									case smm:
-										RTC_TimeStructure.Minutes+=1;
+										mm+=1;
 									  sprintf(lcd_buffer,"MIN=%02u",mm);
 										BSP_LCD_GLASS_Clear();
 										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
@@ -650,7 +674,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 										break;					
 									
 									case shh:
-										RTC_TimeStructure.Hours+=1;
+										hh+=1;
 									  sprintf(lcd_buffer,"HRS=%02u",hh);
 										BSP_LCD_GLASS_Clear();
 										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
@@ -658,7 +682,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 										break;
 									
 									case syy:
-										RTC_DateStructure.Year+=1;
+										yy+=1;
 									  sprintf(lcd_buffer,"YR=%02u",yy);
 										BSP_LCD_GLASS_Clear();
 										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
@@ -666,7 +690,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 										break;
 									
 									case smo:
-										RTC_DateStructure.Month+=1;
+										mo+=1;
 									  sprintf(lcd_buffer,"MON=%02u",mo);
 										BSP_LCD_GLASS_Clear();
 										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
@@ -674,7 +698,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 										break;	
 									
 									case sdd:
-										RTC_DateStructure.Date+=1;
+										dd+=1;
 									  sprintf(lcd_buffer,"DAY=%02u",dd);
 										BSP_LCD_GLASS_Clear();
 										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
@@ -683,7 +707,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 								}
 							}
-							
+							RTC_Config();
 							break;
 			
 			case GPIO_PIN_5:    //down button						
@@ -694,7 +718,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							BSP_LCD_GLASS_Clear();
 							BSP_LCD_GLASS_DisplayString((uint8_t*)"PE14");
 							break;			
-			default://
+			case GPIO_PIN_15:
+							if(STATE == SETTINGS) STATE=TIMER;
+							else STATE=SETTINGS;
+			default:
 						//default
 						break;
 	  } 
@@ -830,14 +857,11 @@ void eeReadTime()
 void RTC_DateShow()  //Funtion to display the RTC date on the LCD
 	{
 	HAL_RTC_GetDate(&RTCHandle, &RTC_DateStructure, RTC_FORMAT_BIN); 
-  /*
+ 
 	yy=RTC_DateStructure.Year;
 	mo=RTC_DateStructure.Month;
 	dd=RTC_DateStructure.Date;
-	*/
-	yy=18;
-	mo=05;
-	dd=30;
+
 		
 	sprintf(datestring,"%02u%02u%02u",yy,mo,dd);
 	BSP_LCD_GLASS_Clear();
