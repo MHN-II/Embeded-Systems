@@ -711,12 +711,69 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 							break;
 			
 			case GPIO_PIN_5:    //down button						
-							BSP_LCD_GLASS_Clear();
-							BSP_LCD_GLASS_DisplayString((uint8_t*)"down");
+if(STATE == SETTINGS){
+								switch(SETVAR){
+									case sss:
+										if(ss == 0) ss=0;
+										else ss-=1;
+									  sprintf(lcd_buffer,"SEC=%02u",ss);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;
+									
+									case smm:
+										if(mm == 0) mm=0;
+										else mm-=1;
+									  sprintf(lcd_buffer,"MIN=%02u",mm);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;					
+									
+									case shh:
+										if(hh == 0) hh=0;
+										else hh-=1;
+									  sprintf(lcd_buffer,"HRS=%02u",hh);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;
+									
+									case syy:
+										if(yy == 0) yy=0;
+										else yy-=1;
+									  sprintf(lcd_buffer,"YR=%02u",yy);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;
+									
+									case smo:
+										if(mo == 0) ss=0;
+										else mo-=1;
+									  sprintf(lcd_buffer,"MON=%02u",mo);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;	
+									
+									case sdd:
+										if(dd == 0) dd=0;
+										else dd-=1;
+									  sprintf(lcd_buffer,"DAY=%02u",dd);
+										BSP_LCD_GLASS_Clear();
+										BSP_LCD_GLASS_DisplayString((uint8_t*)lcd_buffer);
+										HAL_Delay(1000);
+										break;						
+
+								}
+							}
+							RTC_Config();
 							break;
+							
 			case GPIO_PIN_14:    //down button						
-							BSP_LCD_GLASS_Clear();
-							BSP_LCD_GLASS_DisplayString((uint8_t*)"PE14");
+							STATE=RECTIME;
 							break;			
 			case GPIO_PIN_15:
 							if(STATE == SETTINGS) STATE=TIMER;
